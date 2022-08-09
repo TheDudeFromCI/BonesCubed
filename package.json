@@ -1,0 +1,30 @@
+{
+  "name": "net.whg.bonescubed",
+  "displayName": "Bones³",
+  "version": "0.0.1",
+  "unity": "2021.3",
+  "description": "The core Unity package for the Bones³ library.",
+  "keywords": [
+    "unity",
+    "unity3d",
+    "upm",
+    "whg",
+    "voxel",
+    "cubes",
+    "blocks"
+  ],
+  "homepage": "https://github.com/TheDudeFromCI/BonesCubed.git",
+  "bugs": {
+    "url": "https://github.com/TheDudeFromCI/BonesCubed/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/TheDudeFromCI/BonesCubed.git"
+  },
+  "license": "MIT",
+  "author": "Wraithaven Games (https://github.com/TheDudeFromCI)",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {}
+}

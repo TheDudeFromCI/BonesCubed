@@ -1,0 +1,16 @@
+{
+    "name": "net.whg.bones3.runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:1973cd31b34f7d1e8997ecce642a85fb"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
