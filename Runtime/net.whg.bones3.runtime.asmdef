@@ -2,7 +2,9 @@
     "name": "net.whg.bones3.runtime",
     "rootNamespace": "",
     "references": [
-        "GUID:1973cd31b34f7d1e8997ecce642a85fb"
+        "GUID:1973cd31b34f7d1e8997ecce642a85fb",
+        "GUID:696a0953692949b40bec8730e64e1fdd",
+        "GUID:9e24947de15b9834991c9d8411ea37cf"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
