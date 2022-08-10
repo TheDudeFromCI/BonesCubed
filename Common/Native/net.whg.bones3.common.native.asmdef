@@ -1,14 +1,12 @@
 {
-    "name": "net.whg.bones3.common",
+    "name": "net.whg.bones3.common.native",
     "rootNamespace": "",
     "references": [
-        "GUID:f60f9f7d0e45b7e24b3a31e355929201",
-        "GUID:64378bbad10e020c6aa2c1c14436e03a",
-        "GUID:e0cd26848372d4e5c891c569017e11f1"
+        "GUID:64378bbad10e020c6aa2c1c14436e03a"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": false,
+    "allowUnsafeCode": true,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": false,
