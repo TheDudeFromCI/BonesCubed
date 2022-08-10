@@ -57,10 +57,12 @@ namespace Bones3.Storage
     /// </summary>
     /// <param name="chunk">The chunk this block is in.</param>
     /// <param name="pos">The position of this block in the world.</param>
-    internal Block(IChunk chunk, BlockPos pos)
+    /// <param name="blockType">The block type to assign to this block.</param>
+    internal Block(IChunk chunk, BlockPos pos, IBlockType blockType)
     {
       Chunk = chunk;
       Position = pos;
+      BlockType = blockType;
     }
   }
 }
