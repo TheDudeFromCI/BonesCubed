@@ -5,7 +5,7 @@ namespace Bones3
   /// <summary>
   /// Represents a 16x16x16 slice of a world containing a grid of voxels.
   /// </summary>
-  public interface IChunk
+  public interface IChunk : IDisposable
   {
     /// <summary>
     /// Gets the world that this chunk is in.

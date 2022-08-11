@@ -1,3 +1,4 @@
+using System;
 using LibSugar;
 using System.Collections.Generic;
 
@@ -37,6 +38,16 @@ namespace Bones3.Storage
     public Option<IBlock> GetBlock(BlockPos pos, bool create)
     {
       return GetChunk(pos, create).Map(c => c[pos]);
+    }
+
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+      foreach (var chunk in this.chunks.Values)
+        chunk.Dispose();
+
+      this.chunks.Clear();
     }
   }
 }

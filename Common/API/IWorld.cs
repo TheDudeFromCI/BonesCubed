@@ -1,3 +1,4 @@
+using System;
 using LibSugar;
 
 namespace Bones3
@@ -5,7 +6,7 @@ namespace Bones3
   /// <summary>
   /// An infinite grid of blocks stored within chunks.
   /// </summary>
-  public interface IWorld
+  public interface IWorld : IDisposable
   {
     /// <summary>
     /// Gets the chunk that contains the given block coordinate.
