@@ -1,5 +1,6 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
-using LibSugar;
 
 namespace Bones3.Runtime
 {
@@ -18,12 +19,56 @@ namespace Bones3.Runtime
 
 
     /// <inheritdoc/>
-    public Option<IBlockModelVariant> GetVariant(IBlock block)
+    public List<ModelVariant> GetVariants(List<Mesh> meshList)
     {
-      for (int i = 0; i < this.modelVariants.Length; i++)
-        if (this.modelVariants[i].IsValidFor(block)) return Option<IBlockModelVariant>.Some(this.modelVariants[i]);
+      var list = new List<ModelVariant>();
 
-      return Option<IBlockModelVariant>.None;
+      foreach (var variant in this.modelVariants)
+      {
+        if (!meshList.Contains(variant.staticMesh)) meshList.Add(variant.staticMesh);
+
+        var modelVariant = new ModelVariant();
+        modelVariant.transform = variant.Transform;
+        modelVariant.meshIndex = meshList.IndexOf(variant.staticMesh);
+        list.Add(modelVariant);
+      }
+
+      return list;
     }
+  }
+
+
+  /// <summary>
+  /// A Unity-friendly wrapper for a block model variant that can be modified
+  /// from within the Unity editor.
+  /// </summary>
+  [Serializable]
+  internal class BlockModelVariant
+  {
+    [NotNull]
+    [SerializeField]
+    [Tooltip("The mesh for this variant that is baked into the chunk mesh.")]
+    internal Mesh staticMesh;
+
+
+    [SerializeField]
+    [Tooltip("The mesh translation to apply to this variant.")]
+    internal Vector3 translation;
+
+
+    [SerializeField]
+    [Tooltip("The mesh rotation to apply to this variant.")]
+    internal Vector3 rotation;
+
+
+    [SerializeField]
+    [Tooltip("The mesh scale to apply to this variant.")]
+    internal Vector3 scale = Vector3.one;
+
+
+    /// <summary>
+    /// Computes the transformation matrix for this model variant.
+    /// </summary>
+    internal Matrix4x4 Transform => Matrix4x4.TRS(this.translation, Quaternion.Euler(this.rotation), this.scale);
   }
 }

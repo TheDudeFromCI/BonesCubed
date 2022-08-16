@@ -20,6 +20,12 @@ namespace Bones3
 
 
     /// <summary>
+    /// Gets the local chunk index for this block position.
+    /// </summary>
+    public int Index => (z & 15) * 16 * 16 + (y & 15) * 16 + (x & 15);
+
+
+    /// <summary>
     /// Creates a new block posiiton instance at the given coordinates.
     /// </summary>
     /// <param name="x">The x coordinate.</param>

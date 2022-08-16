@@ -2,46 +2,40 @@ using System;
 using LibSugar;
 using System.Collections.Generic;
 
-namespace Bones3.Storage
+namespace Bones3
 {
-  public class World : IWorld
+  /// <summary>
+  /// An infinite grid of blocks stored within chunks.
+  /// </summary>
+  public abstract class World : IDisposable
   {
     private readonly Dictionary<BlockPos, Chunk> chunks = new Dictionary<BlockPos, Chunk>();
-    private IBlockType defaultBlockType;
 
 
     /// <summary>
-    /// Creates a new World instance.
+    /// Gets the chunk that contains the given block coordinate.
     /// </summary>
-    /// <param name="defaultBlockType">The default block type to use when generating new chunks.</param>
-    public World(IBlockType defaultBlockType)
-    {
-      this.defaultBlockType = defaultBlockType;
-    }
-
-
-    /// <inheritdoc/>
-    public Option<IChunk> GetChunk(BlockPos pos, bool create)
+    /// <param name="pos">The block position.</param>
+    /// <param name="create">Whether or not to create the chunk if it does not currently exist.</param>
+    /// <returns>The chunk, or null if it does not exist or could not be created.</returns>
+    public Option<Chunk> GetChunk(BlockPos pos, bool create)
     {
       pos &= ~15;
 
-      if (this.chunks.ContainsKey(pos)) return Option<IChunk>.Some(this.chunks[pos]);
-      if (!create) return Option<IChunk>.None;
+      if (this.chunks.ContainsKey(pos)) return Option<Chunk>.Some(this.chunks[pos]);
+      if (!create) return Option<Chunk>.None;
 
-      var chunk = new Chunk(this, pos, this.defaultBlockType);
+      var chunk = new Chunk(this, pos);
       this.chunks[pos] = chunk;
-      return Option<IChunk>.Some(chunk);
+      CreateFields(chunk);
+
+      return Option<Chunk>.Some(chunk);
     }
 
 
-    /// <inheritdoc/>
-    public Option<IBlock> GetBlock(BlockPos pos, bool create)
-    {
-      return GetChunk(pos, create).Map(c => c[pos]);
-    }
-
-
-    /// <inheritdoc/>
+    /// <summary>
+    /// Disposes and clears all chunks within this world.
+    /// </summary>
     public void Dispose()
     {
       foreach (var chunk in this.chunks.Values)
@@ -49,5 +43,15 @@ namespace Bones3.Storage
 
       this.chunks.Clear();
     }
+
+
+    /// <summary>
+    /// Creates all fields that should exist within this chunk. This is called
+    /// once per chunk when that chunk is created or loaded. If a chunk is
+    /// unloaded and then loaded again later, this method is called for the new
+    /// chunk instance.
+    /// </summary>
+    /// <param name="chunk">The new chunk.</param>
+    protected abstract void CreateFields(Chunk chunk);
   }
 }

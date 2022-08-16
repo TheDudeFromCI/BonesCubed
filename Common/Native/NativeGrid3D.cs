@@ -12,6 +12,7 @@ namespace Bones3.Native
   [NativeContainer]
   public unsafe struct NativeGrid3D<T> : IDisposable where T : struct
   {
+    [NativeDisableUnsafePtrRestriction]
     private void* buffer;
     private BlockPos size;
     private Allocator allocator;
@@ -58,6 +59,8 @@ namespace Bones3.Native
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
     static int s_staticSafetyId;
     internal AtomicSafetyHandle m_Safety;
+
+    [NativeSetClassTypeToNullOnSchedule]
     internal DisposeSentinel m_DisposeSentinel;
 #endif
 
@@ -75,7 +78,7 @@ namespace Bones3.Native
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
       if (allocator <= Allocator.None) throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
       if (size.x <= 0 || size.y <= 0 || size.z <= 0) throw new ArgumentException("Grid size must be at least 1x1x1 units", nameof(size));
-      if (!UnsafeUtility.IsBlittable<T>()) throw new ArgumentException($"{typeof(T)} used in NativeCustomArray<{typeof(T)}> must be blittable", nameof(T));
+      if (!UnsafeUtility.IsBlittable<T>()) throw new ArgumentException($"{typeof(T)} used in NativeGrid3D<{typeof(T)}> must be blittable", nameof(T));
 #endif
 
       long totalBytes = (long)UnsafeUtility.SizeOf<T>() * size.x * size.y * size.z;
@@ -101,6 +104,7 @@ namespace Bones3.Native
 #endif
 
       UnsafeUtility.Free(this.buffer, this.allocator);
+      this.buffer = null;
     }
   }
 }
