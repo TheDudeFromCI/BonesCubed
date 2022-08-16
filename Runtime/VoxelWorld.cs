@@ -21,14 +21,16 @@ namespace Bones3.Runtime
     {
       var world = new CustomWorld();
       var pos = new BlockPos(0, 0, 0);
-      var chunk = world.GetChunk(pos, true).Value;
+      var chunk = world.GetChunk(pos, true);
       var field = chunk.GetField<BlockMeshData>("model");
       field[pos] = new BlockMeshData() { IsSolid = true };
+
+      var chunkGrid = chunk.GetFieldAndSurrounding<BlockMeshData>("model");
 
       var meshData = new NativeMesh<VoxelVertex, ushort>(Allocator.TempJob);
       var remesh = new GenerateChunkMesh()
       {
-        blockMeshData = field,
+        chunkData = chunkGrid,
         chunkMesh = meshData
       }.Schedule();
       remesh.Complete();

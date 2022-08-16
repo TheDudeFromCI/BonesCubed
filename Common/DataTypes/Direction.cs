@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Bones3
 {
-  public sealed class Direction
+  public struct Direction
   {
     /// <summary>
     /// The north-facing directional enum value.
@@ -43,13 +42,6 @@ namespace Bones3
 
 
     /// <summary>
-    /// A read-only list of all direction values in the order of: North, East,
-    /// South, West, Up, Down.
-    /// </summary>
-    public static readonly IList<Direction> All = Array.AsReadOnly(new Direction[] { North, East, South, West, Up, Down });
-
-
-    /// <summary>
     /// The index value of this direction.
     /// </summary>
     public int Index { get; private set; }
@@ -82,7 +74,7 @@ namespace Bones3
           case 3: return Direction.East;
           case 4: return Direction.Down;
           case 5: return Direction.Up;
-          default: return null;
+          default: return default;
         }
       }
     }

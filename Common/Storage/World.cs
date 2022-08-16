@@ -1,5 +1,4 @@
 using System;
-using LibSugar;
 using System.Collections.Generic;
 
 namespace Bones3
@@ -10,6 +9,25 @@ namespace Bones3
   public abstract class World : IDisposable
   {
     private readonly Dictionary<BlockPos, Chunk> chunks = new Dictionary<BlockPos, Chunk>();
+    private Chunk voidChunk;
+
+
+    /// <summary>
+    /// Gets a reference to the void chunk object. This is used for storing data
+    /// for chunks that have not yet been loaded. This chunk does not have a
+    /// valid position and exists only as a reference object.
+    /// </summary>
+    public Chunk VoidChunk => this.voidChunk;
+
+
+    /// <summary>
+    /// Creates a new world instance and initializes default data.
+    /// </summary>
+    public World()
+    {
+      this.voidChunk = new Chunk(this, default);
+      CreateFieldsVoid(this.voidChunk);
+    }
 
 
     /// <summary>
@@ -18,23 +36,24 @@ namespace Bones3
     /// <param name="pos">The block position.</param>
     /// <param name="create">Whether or not to create the chunk if it does not currently exist.</param>
     /// <returns>The chunk, or null if it does not exist or could not be created.</returns>
-    public Option<Chunk> GetChunk(BlockPos pos, bool create)
+    public Chunk GetChunk(BlockPos pos, bool create)
     {
       pos &= ~15;
 
-      if (this.chunks.ContainsKey(pos)) return Option<Chunk>.Some(this.chunks[pos]);
-      if (!create) return Option<Chunk>.None;
+      if (this.chunks.ContainsKey(pos)) return this.chunks[pos];
+      if (!create) return null;
 
       var chunk = new Chunk(this, pos);
       this.chunks[pos] = chunk;
       CreateFields(chunk);
 
-      return Option<Chunk>.Some(chunk);
+      return chunk;
     }
 
 
     /// <summary>
-    /// Disposes and clears all chunks within this world.
+    /// Disposes and clears all chunks within this world, including the void
+    /// chunk. The world cannot be used safely after this.
     /// </summary>
     public void Dispose()
     {
@@ -42,6 +61,23 @@ namespace Bones3
         chunk.Dispose();
 
       this.chunks.Clear();
+      this.voidChunk.Dispose();
+    }
+
+
+    /// <summary>
+    /// This method is called once when the world is first created in order to
+    /// create and initialize the fields that exist within the "void". A void
+    /// chunk is a chunk that is ungenerated or unloaded, and contains the
+    /// fields that are returned when requesting data from chunks that do not
+    /// exist. By default, this method simply calls the standard CreateFields()
+    /// method and leaves all data at it's default value. This method can be
+    /// overriden in order to assign a different default value for void chunks.
+    /// </summary>
+    /// <param name="chunk">The void chunk template.</param>
+    protected virtual void CreateFieldsVoid(Chunk chunk)
+    {
+      CreateFields(chunk);
     }
 
 

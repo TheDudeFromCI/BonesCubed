@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Bones3
@@ -46,6 +47,7 @@ namespace Bones3
     /// <param name="direction">The direction of the offset.</param>
     /// <param name="units">The number of units to shift.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public BlockPos Offset(Direction direction, int units)
     {
       return this + direction.AsBlockPos * units;
@@ -83,6 +85,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos Min(BlockPos a, BlockPos b)
     {
       return new BlockPos(Math.Min(a.x, b.x), Math.Min(a.y, b.y), Math.Min(a.z, b.z));
@@ -96,6 +99,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos Max(BlockPos a, BlockPos b)
     {
       return new BlockPos(Math.Max(a.x, b.x), Math.Max(a.y, b.y), Math.Max(a.z, b.z));
@@ -108,6 +112,7 @@ namespace Bones3
     /// <param name="pos">The block position.</param>
     /// <param name="val">The mask value.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos operator &(BlockPos pos, int val)
     {
       return new BlockPos(pos.x & val, pos.y & val, pos.z & val);
@@ -120,6 +125,7 @@ namespace Bones3
     /// <param name="pos">The block position.</param>
     /// <param name="val">The bit shift value.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos operator >>(BlockPos pos, int val)
     {
       return new BlockPos(pos.x >> val, pos.y >> val, pos.z >> val);
@@ -132,6 +138,7 @@ namespace Bones3
     /// <param name="pos">The block position.</param>
     /// <param name="val">The bit shift value.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos operator <<(BlockPos pos, int val)
     {
       return new BlockPos(pos.x << val, pos.y << val, pos.z << val);
@@ -144,6 +151,7 @@ namespace Bones3
     /// <param name="pos">The first block position.</param>
     /// <param name="val">The second block position.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos operator +(BlockPos a, BlockPos b)
     {
       return new BlockPos(a.x + b.x, a.y + b.y, a.z + b.z);
@@ -156,6 +164,7 @@ namespace Bones3
     /// <param name="pos">The block position.</param>
     /// <param name="val">The scaler value.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos operator *(BlockPos pos, int val)
     {
       return new BlockPos(pos.x * val, pos.y * val, pos.z * val);
@@ -169,6 +178,7 @@ namespace Bones3
     /// <param name="pos">The block position.</param>
     /// <param name="val">The scaler value.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos operator +(BlockPos pos, int val)
     {
       return new BlockPos(pos.x + val, pos.y + val, pos.z + val);
@@ -181,6 +191,7 @@ namespace Bones3
     /// <param name="pos">The block position.</param>
     /// <param name="val">The direction.</param>
     /// <returns>The new block position.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static BlockPos operator +(BlockPos pos, Direction dir)
     {
       return pos + dir.AsBlockPos;
@@ -193,6 +204,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>True if both block positions are equal. False otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator ==(BlockPos a, BlockPos b)
     {
       return a.x == b.x && a.y == b.y && a.z == b.z;
@@ -205,6 +217,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>True if both block positions are not equal. False otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator !=(BlockPos a, BlockPos b)
     {
       return a.x != b.x || a.y != b.y || a.z != b.z;
@@ -218,6 +231,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>True if the first block position is smaller than the second. False otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator <(BlockPos a, BlockPos b)
     {
       return a.x < b.x && a.y < b.y && a.z < b.z;
@@ -231,6 +245,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>True if the first block position is greater than the second. False otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator >(BlockPos a, BlockPos b)
     {
       return a.x > b.x && a.y > b.y && a.z > b.z;
@@ -244,6 +259,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>True if the first block position is smaller, or equal to, the second. False otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator <=(BlockPos a, BlockPos b)
     {
       return a.x <= b.x && a.y <= b.y && a.z <= b.z;
@@ -257,6 +273,7 @@ namespace Bones3
     /// <param name="a">The first block position.</param>
     /// <param name="b">The second block position.</param>
     /// <returns>True if the first block position is greater, or equal to, the second. False otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator >=(BlockPos a, BlockPos b)
     {
       return a.x >= b.x && a.y >= b.y && a.z >= b.z;

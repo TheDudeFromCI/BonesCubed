@@ -74,5 +74,34 @@ namespace Bones3
       var field = new NativeGrid3D<T>(new BlockPos(16, 16, 16), Allocator.Persistent);
       this.fields[name] = field;
     }
+
+
+    /// <summary>
+    /// Gets the native field data within this chunk and all surrounding chunks
+    /// for the given name.
+    /// </summary>
+    /// <typeparam name="T">The field data type.</typeparam>
+    /// <param name="name">The name of the field.</param>
+    /// <param name="fields">The 3x3x3 grid to store the field references in.</param>
+    /// <exception cref="ArgumentException">If the field does not exist.</exception>
+    public SurroundingChunkGrid<T> GetFieldAndSurrounding<T>(string name) where T : struct
+    {
+      var fields = new SurroundingChunkGrid<T>();
+
+      for (int x = -1; x <= 1; x++)
+      {
+        for (int y = -1; y <= 1; y++)
+        {
+          for (int z = -1; z <= 1; z++)
+          {
+            var pos = new BlockPos(x, y, z) * 16;
+            var chunk = World.GetChunk(pos + Position, false) ?? World.VoidChunk;
+            fields[pos] = chunk.GetField<T>(name);
+          }
+        }
+      }
+
+      return fields;
+    }
   }
 }
