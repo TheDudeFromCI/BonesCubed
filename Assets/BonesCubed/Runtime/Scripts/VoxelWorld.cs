@@ -17,13 +17,13 @@ namespace Bones3.Runtime
 
   public class VoxelWorld : MonoBehaviour
   {
-    public Mesh grass;
+    public BlockModel model;
 
 
     void Start()
     {
       var assets = new Bones3AssetReference();
-      var grassId = assets.LoadBlockModel(grass);
+      var grassId = assets.LoadBlockModel(model);
 
       var world = new CustomWorld();
       var pos = new BlockPos(0, 0, 0);

@@ -57,7 +57,6 @@ namespace Bones3.Jobs
             modelIndex--;
 
             var modelPointer = this.modelPointers[modelIndex];
-            UnityEngine.Debug.Log(modelPointer.containedSegments);
             if (modelPointer.containedSegments == OccludingVoxelVertexSegement.None) continue;
 
             var shown = OccludingVoxelVertexSegement.None;

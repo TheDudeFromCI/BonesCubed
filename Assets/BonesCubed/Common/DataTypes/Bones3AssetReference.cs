@@ -43,11 +43,11 @@ namespace Bones3
     /// <summary>
     /// Loads a block model into this asset database.
     /// </summary>
-    /// <param name="mesh">The mesh to load.</param>
+    /// <param name="blockModel">The block model to load.</param>
     /// <returns>The model index.</returns>
-    public ushort LoadBlockModel(Mesh mesh)
+    public ushort LoadBlockModel(IBlockModel blockModel)
     {
-      var model = MeshUtilities.BakeBlockModelIntoAtlas(mesh, this.modelAtlas, 0, true);
+      var model = MeshUtilities.BakeBlockModelIntoAtlas(blockModel, this.modelAtlas, 0, true);
       this.modelPointers.Add(model);
       return (ushort)this.modelPointers.Length;
     }

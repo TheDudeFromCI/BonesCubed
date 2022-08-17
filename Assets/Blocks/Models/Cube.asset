@@ -12,8 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84d241e7741f77107afe348a1f586ad0, type: 3}
   m_Name: Cube
   m_EditorClassIdentifier: 
-  modelVariants:
-  - staticMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-    translation: {x: 0, y: 0, z: 0}
-    rotation: {x: 0, y: 0, z: 0}
-    scale: {x: 1, y: 1, z: 1}
+  staticMesh: {fileID: 1846653201744175015, guid: 734754cad6d556515b05e6693c2bc115, type: 3}
+  occludingDirections: -1

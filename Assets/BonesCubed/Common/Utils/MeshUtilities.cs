@@ -21,15 +21,16 @@ namespace Bones3.Util
     /// This function does not handle determining occluding segments, which
     /// should be assigned manually.
     /// </summary>
-    /// <param name="mesh">The Unity block model mesh.</param>
+    /// <param name="blockModel">The Unity block model.</param>
     /// <param name="atlas">The occluding block model atlas.</param>
     /// <param name="textureIndex">The texture index to use for this model.</param>
     /// <param name="allowSegmentation">Whether or not to attempt to segment the model into occludable parts.</param>
     /// <returns>The model pointer data.</returns>
-    public static OccludingBlockModel BakeBlockModelIntoAtlas(Mesh mesh, NativeMesh<OccludingVoxelVertex, ushort> atlas, int textureIndex, bool allowSegmentation)
+    public static OccludingBlockModel BakeBlockModelIntoAtlas(IBlockModel blockModel, NativeMesh<OccludingVoxelVertex, ushort> atlas, int textureIndex, bool allowSegmentation)
     {
       var model = new OccludingBlockModel();
 
+      var mesh = blockModel.StaticMesh;
       var vertices = mesh.vertices;
       var normals = mesh.normals;
       var tangents = mesh.tangents;
@@ -37,7 +38,7 @@ namespace Bones3.Util
       var indices = mesh.triangles;
 
       model.containedSegments = OccludingVoxelVertexSegement.None;
-      model.occludingSegments = OccludingVoxelVertexSegement.None;
+      model.occludingSegments = blockModel.OccludingDirections;
       model.vertexOffset = atlas.VertexCount;
       model.indexOffset = atlas.IndexCount;
       model.vertexCount = vertices.Length;
