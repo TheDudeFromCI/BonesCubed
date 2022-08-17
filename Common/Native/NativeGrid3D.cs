@@ -36,7 +36,7 @@ namespace Bones3.Native
       {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
-        if (pos < new BlockPos(0, 0, 0) || pos >= this.size) throw new IndexOutOfRangeException($"{pos} is outside of grid bounds! Size: {this.size}");
+        if (!(pos >= new BlockPos(0, 0, 0) && pos < this.size)) throw new IndexOutOfRangeException($"{pos} is outside of grid bounds! Size: {this.size}");
 #endif
 
         int index = pos.z * this.size.x * this.size.y + pos.y * this.size.x + pos.x;
@@ -47,7 +47,7 @@ namespace Bones3.Native
       {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         AtomicSafetyHandle.CheckWriteAndThrow(this.m_Safety);
-        if (pos < new BlockPos(0, 0, 0) || pos >= this.size) throw new IndexOutOfRangeException($"{pos} is outside of grid bounds! Size: {this.size}");
+        if (!(pos >= new BlockPos(0, 0, 0) && pos < this.size)) throw new IndexOutOfRangeException($"{pos} is outside of grid bounds! Size: {this.size}");
 #endif
 
         int index = pos.z * this.size.x * this.size.y + pos.y * this.size.x + pos.x;

@@ -1,105 +1,77 @@
-using Unity.Burst;
 using Unity.Mathematics;
 using Bones3.Native;
+using UnityEngine;
 
-namespace Bones3
+namespace Bones3.Util
 {
+  /// <summary>
+  /// A collection of utility functions for working with mesh data.
+  /// </summary>
   public static class MeshUtilities
   {
     /// <summary>
-    /// Generates a cube object based on the given mesh data and adds it to the
-    /// given mesh.
+    /// Converts the Unity block mesh into an occluded block model and bakes it
+    /// into the model atlas. Block models may be either segmentable or not.
+    /// Segmentable models are usually simple shapes like a plain cube or stair
+    /// case. Segmentable models will allow faces that touch the edge of the
+    /// block bounds to be occluded by neighboring blocks and removed from the
+    /// generated chunk mesh. More complex models may not handle segmentation as
+    /// well, and should have segmentation disabled.
+    ///
+    /// This function does not handle determining occluding segments, which
+    /// should be assigned manually.
     /// </summary>
-    /// <param name="mesh">The mesh</param>
-    /// <param name="cube">The cube data to apply.</param>
-    [BurstCompile]
-    public static void AddCube(NativeMesh<VoxelVertex, ushort> mesh, CubeMeshData cube)
+    /// <param name="mesh">The Unity block model mesh.</param>
+    /// <param name="atlas">The occluding block model atlas.</param>
+    /// <param name="textureIndex">The texture index to use for this model.</param>
+    /// <param name="allowSegmentation">Whether or not to attempt to segment the model into occludable parts.</param>
+    /// <returns>The model pointer data.</returns>
+    public static OccludingBlockModel BakeBlockModelIntoAtlas(Mesh mesh, NativeMesh<OccludingVoxelVertex, ushort> atlas, int textureIndex, bool allowSegmentation)
     {
-      var center = cube.center;
-      var half = cube.size / 2;
+      var model = new OccludingBlockModel();
 
-      var v0 = new float3(center.x - half.x, center.y - half.y, center.z - half.z);
-      var v1 = new float3(center.x - half.x, center.y - half.y, center.z + half.z);
-      var v2 = new float3(center.x - half.x, center.y + half.y, center.z - half.z);
-      var v3 = new float3(center.x - half.x, center.y + half.y, center.z + half.z);
-      var v4 = new float3(center.x + half.x, center.y - half.y, center.z - half.z);
-      var v5 = new float3(center.x + half.x, center.y - half.y, center.z + half.z);
-      var v6 = new float3(center.x + half.x, center.y + half.y, center.z - half.z);
-      var v7 = new float3(center.x + half.x, center.y + half.y, center.z + half.z);
+      var vertices = mesh.vertices;
+      var normals = mesh.normals;
+      var tangents = mesh.tangents;
+      var uvs = mesh.uv;
+      var indices = mesh.triangles;
 
-      AddQuad(mesh, v7, v3, v1, v5, new float3(0, 0, -1), cube.northFace);
-      AddQuad(mesh, v6, v7, v5, v4, new float3(1, 0, 0), cube.eastFace);
-      AddQuad(mesh, v2, v6, v4, v0, new float3(0, 0, 1), cube.southFace);
-      AddQuad(mesh, v3, v2, v0, v1, new float3(-1, 0, 0), cube.westFace);
-      AddQuad(mesh, v3, v7, v6, v2, new float3(0, 1, 0), cube.topFace);
-      AddQuad(mesh, v0, v4, v5, v1, new float3(0, -1, 0), cube.bottomFace);
-    }
+      model.containedSegments = OccludingVoxelVertexSegement.None;
+      model.occludingSegments = OccludingVoxelVertexSegement.None;
+      model.vertexOffset = atlas.VertexCount;
+      model.indexOffset = atlas.IndexCount;
+      model.vertexCount = vertices.Length;
+      model.indexCount = indices.Length;
 
-
-    /// <summary>
-    /// Generates a quad and appends it to the output mesh.
-    /// </summary>
-    /// <param name="mesh">The mesh</param>
-    /// <param name="v0">The first vertex position.</param>
-    /// <param name="v1">The second vertex position.</param>
-    /// <param name="v2">The third vertex position.</param>
-    /// <param name="v3">The fourth vertex position.</param>
-    /// <param name="normal">The normal of the quad.</param>
-    /// <param name="quad">The quad texture data.</param>
-    [BurstCompile]
-    private static void AddQuad(NativeMesh<VoxelVertex, ushort> mesh, float3 v0, float3 v1, float3 v2, float3 v3, float3 normal, QuadMeshData quad)
-    {
-      if (quad.textureIndex < 0) return;
-
-      int vertexCount = mesh.VertexCount;
-      mesh.AppendIndex((ushort)(vertexCount + 0));
-      mesh.AppendIndex((ushort)(vertexCount + 1));
-      mesh.AppendIndex((ushort)(vertexCount + 2));
-      mesh.AppendIndex((ushort)(vertexCount + 0));
-      mesh.AppendIndex((ushort)(vertexCount + 2));
-      mesh.AppendIndex((ushort)(vertexCount + 3));
-
-
-      // TODO Improve this tangent generation code?
-      float3 edge1 = v0 - v1;
-      float3 edge2 = v2 - v0;
-      float deltaV0 = quad.uv0.y - quad.uv1.y;
-      float deltaV1 = quad.uv2.y - quad.uv0.y;
-      float deltaU0 = quad.uv0.x - quad.uv1.x;
-      float deltaU1 = quad.uv2.x - quad.uv0.x;
-      float4 tangent = new float4(math.normalize(deltaV1 * edge1 - deltaV0 * edge2), 1);
-      float3 binormal = math.normalize(deltaU1 * edge1 - deltaU0 * edge2);
-      if (math.dot(math.cross(tangent.xyz, binormal), normal) < 0) tangent = -tangent;
-
-
-      mesh.AppendVertex(new VoxelVertex()
+      for (int i = 0; i < vertices.Length; i++)
       {
-        position = v0,
-        normal = normal,
-        tangent = tangent,
-        uv = new float3(quad.uv0, quad.textureIndex)
-      });
-      mesh.AppendVertex(new VoxelVertex()
-      {
-        position = v1,
-        normal = normal,
-        tangent = tangent,
-        uv = new float3(quad.uv1, quad.textureIndex)
-      });
-      mesh.AppendVertex(new VoxelVertex()
-      {
-        position = v2,
-        normal = normal,
-        tangent = tangent,
-        uv = new float3(quad.uv2, quad.textureIndex)
-      });
-      mesh.AppendVertex(new VoxelVertex()
-      {
-        position = v3,
-        normal = normal,
-        tangent = tangent,
-        uv = new float3(quad.uv3, quad.textureIndex)
-      });
+        // TODO Validate segmentation
+        var segment = OccludingVoxelVertexSegement.Center;
+        if (allowSegmentation)
+        {
+          if (math.dot(normals[i], new float3(0, 0, 1)) > 0.9999 && Mathf.Abs(vertices[i].z - 1) < 0.0001) segment = OccludingVoxelVertexSegement.North;
+          if (math.dot(normals[i], new float3(1, 0, 0)) > 0.9999 && Mathf.Abs(vertices[i].x - 1) < 0.0001) segment = OccludingVoxelVertexSegement.East;
+          if (math.dot(normals[i], new float3(0, 0, -1)) > 0.9999 && Mathf.Abs(vertices[i].z - 0) < 0.0001) segment = OccludingVoxelVertexSegement.South;
+          if (math.dot(normals[i], new float3(-1, 0, 0)) > 0.9999 && Mathf.Abs(vertices[i].x - 0) < 0.0001) segment = OccludingVoxelVertexSegement.West;
+          if (math.dot(normals[i], new float3(0, 1, 0)) > 0.9999 && Mathf.Abs(vertices[i].y - 1) < 0.0001) segment = OccludingVoxelVertexSegement.Top;
+          if (math.dot(normals[i], new float3(0, -1, 0)) > 0.9999 && Mathf.Abs(vertices[i].y - 0) < 0.0001) segment = OccludingVoxelVertexSegement.Bottom;
+        }
+        model.containedSegments |= segment;
+
+        atlas.AppendVertex(new OccludingVoxelVertex()
+        {
+          position = vertices[i],
+          normal = normals[i],
+          tangent = tangents[i],
+          uv = new float3(uvs[i], textureIndex),
+          segement = segment
+        });
+      }
+
+      for (int i = 0; i < indices.Length; i++)
+        atlas.AppendIndex((ushort)indices[i]);
+
+      return model;
     }
   }
 }

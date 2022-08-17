@@ -150,7 +150,7 @@ namespace Bones3.Native
     /// <returns>The data value at the given location.</returns>
     public T GetLocalBlock(BlockPos pos)
     {
-      return this[pos][pos];
+      return this[pos][pos & 15];
     }
   }
 }

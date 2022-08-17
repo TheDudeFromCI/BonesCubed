@@ -311,5 +311,35 @@ namespace Bones3.Native
       verts.Dispose();
       indis.Dispose();
     }
+
+
+    /// <summary>
+    /// Gets the vertex within this mesh at the specified index.
+    /// </summary>
+    /// <param name="index">The vertex index.</param>
+    /// <returns>The vertex.</returns>
+    public V GetVertex(int index)
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+
+      return UnsafeUtility.ReadArrayElement<V>(this.vertexBuffer, index);
+    }
+
+
+    /// <summary>
+    /// Gets the index within this mesh at the specified index.
+    /// </summary>
+    /// <param name="index">The index's index.</param>
+    /// <returns>The index.</returns>
+    public I GetIndex(int index)
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+
+      return UnsafeUtility.ReadArrayElement<I>(this.indexBuffer, index);
+    }
   }
 }
