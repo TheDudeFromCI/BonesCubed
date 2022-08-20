@@ -72,8 +72,8 @@ namespace Bones3.Jobs
 
             for (int i = 0; i < modelPointer.vertexCount; i++)
             {
-              var vertex = this.blockModelAtlas.GetVertex(i + modelPointer.vertexOffset);
-              this.chunkMesh.AppendVertex(new VoxelVertex()
+              var vertex = this.blockModelAtlas[0].VertexList[i + modelPointer.vertexOffset];
+              this.chunkMesh[0].VertexList.Add(new VoxelVertex()
               {
                 position = vertex.position + new float3(x, y, z),
                 normal = vertex.normal,
@@ -84,11 +84,11 @@ namespace Bones3.Jobs
 
             for (int i = 0; i < modelPointer.indexCount; i++)
             {
-              var index = this.blockModelAtlas.GetIndex(i + modelPointer.indexOffset);
-              var vertex = this.blockModelAtlas.GetVertex(index + modelPointer.vertexOffset);
+              var index = this.blockModelAtlas[0].IndexList[i + modelPointer.indexOffset];
+              var vertex = this.blockModelAtlas[0].VertexList[index + modelPointer.vertexOffset];
 
               if ((shown & vertex.segement) == 0) continue;
-              this.chunkMesh.AppendIndex(index);
+              this.chunkMesh[0].IndexList.Add(index);
             }
           }
         }

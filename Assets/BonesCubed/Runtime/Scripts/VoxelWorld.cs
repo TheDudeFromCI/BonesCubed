@@ -33,6 +33,7 @@ namespace Bones3.Runtime
 
       var chunkGrid = chunk.GetFieldAndSurrounding<ushort>("model");
       var meshData = new NativeMesh<VoxelVertex, ushort>(Allocator.TempJob);
+      meshData.SubmeshList.SpawnNewInstance();
       var remesh = new GenerateChunkMesh()
       {
         chunkData = chunkGrid,
