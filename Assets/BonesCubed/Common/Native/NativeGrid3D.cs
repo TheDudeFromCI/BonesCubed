@@ -1,4 +1,5 @@
 using System;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -6,14 +7,14 @@ namespace Bones3.Native
 {
   /// <summary>
   /// An unmanaged data storage container for storing three dimensional,
-  /// blittable data.
+  /// blittable data. This is just a wrapper around a native array.
   /// </summary>
   /// <typeparam name="T">The data type to store in this container.</typeparam>
+  [BurstCompile]
   [NativeContainer]
   public unsafe struct NativeGrid3D<T> : IDisposable where T : struct
   {
-    [NativeDisableUnsafePtrRestriction]
-    private void* buffer;
+    private NativeArray<T> array;
     private BlockPos size;
     private Allocator allocator;
 
@@ -40,7 +41,7 @@ namespace Bones3.Native
 #endif
 
         int index = pos.z * this.size.x * this.size.y + pos.y * this.size.x + pos.x;
-        return UnsafeUtility.ReadArrayElement<T>(this.buffer, index);
+        return this.array[index];
       }
 
       set
@@ -51,7 +52,7 @@ namespace Bones3.Native
 #endif
 
         int index = pos.z * this.size.x * this.size.y + pos.y * this.size.x + pos.x;
-        UnsafeUtility.WriteArrayElement(this.buffer, index, value);
+        this.array[index] = value;
       }
     }
 
@@ -79,32 +80,26 @@ namespace Bones3.Native
       if (allocator <= Allocator.None) throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
       if (size.x <= 0 || size.y <= 0 || size.z <= 0) throw new ArgumentException("Grid size must be at least 1x1x1 units", nameof(size));
       if (!UnsafeUtility.IsBlittable<T>()) throw new ArgumentException($"{typeof(T)} used in NativeGrid3D<{typeof(T)}> must be blittable", nameof(T));
-#endif
 
-      long totalBytes = (long)UnsafeUtility.SizeOf<T>() * size.x * size.y * size.z;
-      this.buffer = UnsafeUtility.Malloc(totalBytes, UnsafeUtility.AlignOf<T>(), allocator);
-      UnsafeUtility.MemClear(this.buffer, totalBytes);
-
-      this.size = size;
-      this.allocator = allocator;
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
       DisposeSentinel.Create(out this.m_Safety, out this.m_DisposeSentinel, 0, allocator);
       if (s_staticSafetyId == 0) s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeGrid3D<T>>();
       AtomicSafetyHandle.SetStaticSafetyId(ref this.m_Safety, s_staticSafetyId);
 #endif
+
+      this.size = size;
+      this.allocator = allocator;
+      this.array = new NativeArray<T>(size.x * size.y * size.z, allocator);
     }
 
 
     /// <inheritdoc/>
     public void Dispose()
     {
+      this.array.Dispose();
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
       DisposeSentinel.Dispose(ref this.m_Safety, ref this.m_DisposeSentinel);
 #endif
-
-      UnsafeUtility.Free(this.buffer, this.allocator);
-      this.buffer = null;
     }
   }
 }
