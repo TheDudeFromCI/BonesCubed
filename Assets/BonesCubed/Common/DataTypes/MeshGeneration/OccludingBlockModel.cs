@@ -12,27 +12,9 @@ namespace Bones3
   public struct OccludingBlockModel
   {
     /// <summary>
-    /// The vertex offset position of this model.
+    /// The submesh number the model is located in.
     /// </summary>
-    public int vertexOffset;
-
-
-    /// <summary>
-    /// The number of vertices in this model.
-    /// </summary>
-    public int vertexCount;
-
-
-    /// <summary>
-    /// The index offset position of this model.
-    /// </summary>
-    public int indexOffset;
-
-
-    /// <summary>
-    /// The number of indices in this model.
-    /// </summary>
-    public int indexCount;
+    public int submesh;
 
 
     /// <summary>

@@ -45,6 +45,8 @@ namespace Bones3.Jobs
     [BurstCompile]
     public void Execute()
     {
+      if (this.chunkMesh.SubmeshCount == 0) this.chunkMesh.AppendSubmesh();
+
       for (int x = 0; x < 16; x++)
       {
         for (int y = 0; y < 16; y++)
@@ -70,25 +72,27 @@ namespace Bones3.Jobs
             if (shown > 0) shown |= OccludingVoxelVertexSegement.Center;
             if ((modelPointer.containedSegments & shown) == OccludingVoxelVertexSegement.None) continue;
 
-            for (int i = 0; i < modelPointer.vertexCount; i++)
+            var vertexCount = this.blockModelAtlas.GetVertexCount(modelPointer.submesh);
+            for (int i = 0; i < vertexCount; i++)
             {
-              var vertex = this.blockModelAtlas[0].VertexList[i + modelPointer.vertexOffset];
-              this.chunkMesh[0].VertexList.Add(new VoxelVertex()
+              var vertex = this.blockModelAtlas.GetVertex(modelPointer.submesh, i);
+              this.chunkMesh.AddVertex(new VoxelVertex()
               {
                 position = vertex.position + new float3(x, y, z),
                 normal = vertex.normal,
                 tangent = vertex.tangent,
                 uv = vertex.uv
-              });
+              }, 0);
             }
 
-            for (int i = 0; i < modelPointer.indexCount; i++)
+            var indexCount = this.blockModelAtlas.GetIndexCount(modelPointer.submesh);
+            for (int i = 0; i < indexCount; i++)
             {
-              var index = this.blockModelAtlas[0].IndexList[i + modelPointer.indexOffset];
-              var vertex = this.blockModelAtlas[0].VertexList[index + modelPointer.vertexOffset];
+              var index = this.blockModelAtlas.GetIndex(modelPointer.submesh, i);
+              var vertex = this.blockModelAtlas.GetVertex(modelPointer.submesh, index);
 
               if ((shown & vertex.segement) == 0) continue;
-              this.chunkMesh[0].IndexList.Add(index);
+              this.chunkMesh.AddIndex(index, 0);
             }
           }
         }

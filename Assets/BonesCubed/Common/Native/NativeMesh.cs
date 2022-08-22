@@ -15,12 +15,20 @@ namespace Bones3.Native
   [BurstCompile]
   [NativeContainer]
   public unsafe struct NativeMesh<V, I> : IDisposable
-    where V : unmanaged
+    where V : unmanaged, IVertexStructure
     where I : unmanaged
   {
-    [NativeDisableUnsafePtrRestriction]
-    private void* submeshList;
+    public struct SubmeshSize
+    {
+      public int vertexCount;
+      public int indexCount;
+      public Bounds bounds;
+    }
 
+
+    private NativeList<V> vertices;
+    private NativeList<I> indices;
+    private NativeList<SubmeshSize> submeshes;
     private Allocator allocator;
 
 
@@ -34,40 +42,16 @@ namespace Bones3.Native
 
 
     /// <summary>
-    /// A list of all the submeshes in this native mesh.
-    /// </summary>
-    public NativeContainerList<NativeSubmesh<V, I>> SubmeshList
-    {
-      get
-      {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
-#endif
-        return UnsafeUtility.ReadArrayElement<NativeContainerList<NativeSubmesh<V, I>>>(this.submeshList, 0);
-      }
-    }
-
-
-    /// <summary>
-    /// Gets the submesh within this mesh at the specified index.
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <returns>The submesh.</returns>
-    /// <exception cref="IndexOutOfRangeException">If the index is out of the bounds of the array.</exception>
-    public NativeSubmesh<V, I> this[int index] => SubmeshList[index];
-
-
-    /// <summary>
     /// Gets the total number of vertices in this mesh across all submeshes.
     /// </summary>
     public int TotalVertexCount
     {
       get
       {
-        var count = 0;
-        var submeshList = SubmeshList;
-        for (int i = 0; i < submeshList.Count; i++) count += submeshList[i].VertexList.Length;
-        return count;
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+        return this.vertices.Length;
       }
     }
 
@@ -79,10 +63,25 @@ namespace Bones3.Native
     {
       get
       {
-        var count = 0;
-        var submeshList = SubmeshList;
-        for (int i = 0; i < submeshList.Count; i++) count += submeshList[i].IndexList.Length;
-        return count;
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+        return this.indices.Length;
+      }
+    }
+
+
+    /// <summary>
+    /// Gets the total number of submeshes in this mesh.
+    /// </summary>
+    public int SubmeshCount
+    {
+      get
+      {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+        return this.submeshes.Length;
       }
     }
 
@@ -94,12 +93,14 @@ namespace Bones3.Native
     {
       get
       {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
         var bounds = new Bounds();
-        var submeshList = SubmeshList;
-        for (int i = 0; i < submeshList.Count; i++)
+        for (int i = 0; i < this.submeshes.Length; i++)
         {
-          if (bounds == default) bounds = submeshList[i].Bounds;
-          else bounds.Encapsulate(submeshList[i].Bounds);
+          if (bounds == default) bounds = this.submeshes[i].bounds;
+          else bounds.Encapsulate(this.submeshes[i].bounds);
         }
 
         return bounds;
@@ -122,33 +123,16 @@ namespace Bones3.Native
       if (!UnsafeUtility.IsBlittable<V>()) throw new ArgumentException($"{typeof(V)} used in NativeSubmesh<{typeof(V)},{typeof(I)}> must be blittable", nameof(V));
       if (!typeof(IVertexStructure).IsAssignableFrom(typeof(V))) throw new ArgumentException($"{typeof(V)} used in NativeSubmesh<{typeof(V)},{typeof(I)}> must extends the IVertexStructure interface", nameof(V));
       if (typeof(I) != typeof(uint) && typeof(I) != typeof(ushort)) throw new ArgumentException($"{typeof(I)} used in NativeSubmesh<{typeof(V)},{typeof(I)}> must be either a uint or a ushort", nameof(I));
-#endif
 
-      this.allocator = allocator;
-
-      long totalBytes = (long)UnsafeUtility.SizeOf<NativeContainerList<NativeSubmesh<V, I>>>();
-      this.submeshList = UnsafeUtility.Malloc(totalBytes, UnsafeUtility.AlignOf<NativeContainerList<NativeSubmesh<V, I>>>(), allocator);
-      UnsafeUtility.WriteArrayElement<NativeContainerList<NativeSubmesh<V, I>>>(this.submeshList, 0, new NativeContainerList<NativeSubmesh<V, I>>(4, CreateNativeSubmesh, allocator));
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
       DisposeSentinel.Create(out this.m_Safety, out this.m_DisposeSentinel, 0, allocator);
       if (s_staticSafetyId == 0) s_staticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeMesh<V, I>>();
       AtomicSafetyHandle.SetStaticSafetyId(ref this.m_Safety, s_staticSafetyId);
 #endif
-    }
 
-
-    /// <summary>
-    /// Creates a new submesh instance using the given allocator.
-    /// </summary>
-    /// <param name="allocator">The allocator.</param>
-    /// <returns>A new submesh instance.</returns>
-    [BurstCompile]
-    [MonoPInvokeCallback(typeof(BuildNativeContainer))]
-    private unsafe static void CreateNativeSubmesh(void* buffer, int index, Allocator allocator)
-    {
-      var submesh = new NativeSubmesh<V, I>(allocator);
-      UnsafeUtility.WriteArrayElement<NativeSubmesh<V, I>>(buffer, index, submesh);
+      this.allocator = allocator;
+      this.vertices = new NativeList<V>(1024, allocator);
+      this.indices = new NativeList<I>(2048, allocator);
+      this.submeshes = new NativeList<SubmeshSize>(4, allocator);
     }
 
 
@@ -156,9 +140,9 @@ namespace Bones3.Native
     [WriteAccessRequired]
     public void Dispose()
     {
-      SubmeshList.Dispose();
-      UnsafeUtility.Free(this.submeshList, this.allocator);
-      this.submeshList = null;
+      this.vertices.Dispose();
+      this.indices.Dispose();
+      this.submeshes.Dispose();
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
       DisposeSentinel.Dispose(ref this.m_Safety, ref this.m_DisposeSentinel);
@@ -167,46 +151,155 @@ namespace Bones3.Native
 
 
     /// <summary>
-    /// Gets all vertices in this native mesh across all submeshes and stores
-    /// them in the given native array. Vertices are stored in the order of
-    /// their submeshes. It is assumed that the provided array is at least
-    /// as large as the value returned by TotalVertexCount.
+    /// Appends a new vertex to the given submesh.
     /// </summary>
-    /// <param name="vertices">The array to write to.</param>
+    /// <param name="vertex">The vertex to add.</param>
+    /// <param name="submesh">The submesh to add to.</param>
     [BurstCompile]
-    public void GetAllVertices(NativeArray<V> vertices)
+    [WriteAccessRequired]
+    public void AddVertex(V vertex, int submesh)
     {
-      int index = 0;
-      for (int i = 0; i < SubmeshList.Count; i++)
-      {
-        var vertexList = SubmeshList[i].VertexList;
-        for (int j = 0; j < vertexList.Length; j++)
-        {
-          vertices[index++] = vertexList[j];
-        }
-      }
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckWriteAndThrow(this.m_Safety);
+#endif
+
+      var vertexOffset = 0;
+      for (int s = 0; s <= submesh; s++) vertexOffset += this.submeshes[s].vertexCount;
+      Insert(this.vertices, vertex, vertexOffset);
+
+      var sub = this.submeshes[submesh];
+      sub.vertexCount++;
+      sub.bounds.Encapsulate(vertex.Position);
+      this.submeshes[submesh] = sub;
     }
 
 
     /// <summary>
-    /// Gets all indices in this native mesh across all submeshes and stores
-    /// them in the given native array. Indices are stored in the order of
-    /// their submeshes. It is assumed that the provided array is at least
-    /// as large as the value returned by TotalIndexCount.
+    /// Appends a new index to the given submesh.
     /// </summary>
-    /// <param name="indices">The array to write to.</param>
+    /// <param name="index">The index to add.</param>
+    /// <param name="submesh">The submesh to add to.</param>
     [BurstCompile]
-    public void GetAllIndices(NativeArray<I> indices)
+    [WriteAccessRequired]
+    public void AddIndex(I index, int submesh)
     {
-      int index = 0;
-      for (int i = 0; i < SubmeshList.Count; i++)
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckWriteAndThrow(this.m_Safety);
+#endif
+
+      var indexOffset = 0;
+      for (int s = 0; s <= submesh; s++) indexOffset += this.submeshes[s].indexCount;
+      Insert(this.indices, index, indexOffset);
+
+      var sub = this.submeshes[submesh];
+      sub.indexCount++;
+      this.submeshes[submesh] = sub;
+    }
+
+
+    /// <summary>
+    /// Gets the number of vertices in the given submesh.
+    /// </summary>
+    /// <param name="submesh">The submesh.</param>
+    /// <returns>The vertex count.</returns>
+    [BurstCompile]
+    public int GetVertexCount(int submesh)
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+
+      return this.submeshes[submesh].vertexCount;
+    }
+
+
+    /// <summary>
+    /// Gets the vertex at the given index within the indicated submesh.
+    /// </summary>
+    /// <param name="submesh">The submesh to read from.</param>
+    /// <param name="index">The index of the vertex.</param>
+    /// <returns>The vertex</returns>
+    [BurstCompile]
+    public V GetVertex(int submesh, int index)
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+
+      var vertexOffset = 0;
+      for (int s = 0; s < submesh; s++) vertexOffset += this.submeshes[s].vertexCount;
+      return this.vertices[vertexOffset + index];
+    }
+
+
+    /// <summary>
+    /// Gets the index at the given index within the indicated submesh.
+    /// </summary>
+    /// <param name="submesh">The submesh to read from.</param>
+    /// <param name="index">The index of the index.</param>
+    /// <returns>The index</returns>
+    [BurstCompile]
+    public I GetIndex(int submesh, int index)
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+
+      var indexOffset = 0;
+      for (int s = 0; s < submesh; s++) indexOffset += this.submeshes[s].indexCount;
+      return this.indices[indexOffset + index];
+    }
+
+
+    /// <summary>
+    /// Gets the number of indices in the given submesh.
+    /// </summary>
+    /// <param name="submesh">The submesh.</param>
+    /// <returns>The index count.</returns>
+    [BurstCompile]
+    public int GetIndexCount(int submesh)
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+
+      return this.submeshes[submesh].indexCount;
+    }
+
+
+    /// <summary>
+    /// Gets the bounds of the given submesh.
+    /// </summary>
+    /// <param name="submesh">The submesh.</param>
+    /// <returns>The submesh bounds.</returns>
+    [BurstCompile]
+    public Bounds GetBounds(int submesh)
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+#endif
+
+      return this.submeshes[submesh].bounds;
+    }
+
+
+    /// <summary>
+    /// Appends a new submesh to this native mesh.
+    /// </summary>
+    [BurstCompile]
+    [WriteAccessRequired]
+    public void AppendSubmesh()
+    {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+      AtomicSafetyHandle.CheckWriteAndThrow(this.m_Safety);
+#endif
+
+      this.submeshes.Add(new SubmeshSize()
       {
-        var indexList = SubmeshList[i].IndexList;
-        for (int j = 0; j < indexList.Length; j++)
-        {
-          indices[index++] = indexList[j];
-        }
-      }
+        vertexCount = 0,
+        indexCount = 0,
+        bounds = default
+      });
     }
 
 
@@ -225,39 +318,62 @@ namespace Bones3.Native
       var layout = (new V() as IVertexStructure).GetLayout();
       var updateFlags = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds;
 
-      var verts = new NativeArray<V>(TotalVertexCount, Allocator.Temp);
-      var indis = new NativeArray<I>(TotalIndexCount, Allocator.Temp);
-      GetAllVertices(verts);
-      GetAllIndices(indis);
-
       mesh.Clear();
-      mesh.subMeshCount = SubmeshList.Count;
+      mesh.subMeshCount = SubmeshCount;
       mesh.bounds = Bounds;
-      mesh.SetVertexBufferParams(verts.Length, layout);
-      mesh.SetVertexBufferData(verts, 0, 0, verts.Length);
-      mesh.SetIndexBufferParams(indis.Length, typeof(I) == typeof(uint) ? IndexFormat.UInt32 : IndexFormat.UInt16);
-      mesh.SetIndexBufferData(indis, 0, 0, indis.Length, updateFlags);
-      verts.Dispose();
-      indis.Dispose();
+      mesh.SetVertexBufferParams(TotalVertexCount, layout);
+      mesh.SetVertexBufferData(this.vertices.AsArray(), 0, 0, TotalVertexCount);
+      mesh.SetIndexBufferParams(TotalIndexCount, typeof(I) == typeof(uint) ? IndexFormat.UInt32 : IndexFormat.UInt16);
+      mesh.SetIndexBufferData(this.indices.AsArray(), 0, 0, TotalIndexCount, updateFlags);
 
       int vertexOffset = 0;
       int indexOffset = 0;
-      for (int s = 0; s < SubmeshList.Count; s++)
+      for (int s = 0; s < SubmeshCount; s++)
       {
-        var submesh = SubmeshList[s];
+        var submesh = this.submeshes[s];
         mesh.SetSubMesh(0, new SubMeshDescriptor()
         {
-          indexCount = submesh.IndexList.Length,
+          indexCount = submesh.indexCount,
           topology = MeshTopology.Triangles,
           baseVertex = vertexOffset,
           bounds = Bounds,
           firstVertex = indexOffset,
-          vertexCount = submesh.VertexList.Length,
+          vertexCount = submesh.vertexCount,
         }, updateFlags);
 
-        vertexOffset += submesh.VertexList.Length;
-        indexOffset += submesh.IndexList.Length;
+        vertexOffset += submesh.vertexCount;
+        indexOffset += submesh.indexCount;
       }
+    }
+
+    /// <summary>
+    /// Insert an element into a list.
+    /// </summary>
+    /// <typeparam name="T">The type.</typeparam>
+    /// <param name="list">The list.</param>
+    /// <param name="item">The element.</param>
+    /// <param name="index">The index.</param>
+    private static unsafe void Insert<T>(NativeList<T> list, T item, int index) where T : unmanaged
+    {
+      if (index == list.Length)
+      {
+        list.Add(item);
+        return;
+      }
+
+      if (index < 0 || index > list.Length) throw new IndexOutOfRangeException();
+      list.Add(default);
+
+      int elemSize = UnsafeUtility.SizeOf<T>();
+      byte* basePtr = (byte*)list.GetUnsafePtr();
+
+      var from = (index * elemSize) + basePtr;
+      var to = (elemSize * (index + 1)) + basePtr;
+      var size = elemSize * (list.Length - index - 1); // -1 because we added an extra fake element
+
+      UnsafeUtility.MemMove(to, from, size);
+
+      list[index] = item;
     }
   }
 }

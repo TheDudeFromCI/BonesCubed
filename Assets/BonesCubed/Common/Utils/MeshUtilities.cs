@@ -39,13 +39,8 @@ namespace Bones3.Util
 
       model.containedSegments = OccludingVoxelVertexSegement.None;
       model.occludingSegments = blockModel.OccludingDirections;
-      model.vertexOffset = atlas.TotalVertexCount;
-      model.indexOffset = atlas.TotalIndexCount;
-      model.vertexCount = vertices.Length;
-      model.indexCount = indices.Length;
-
-      if (atlas.SubmeshList.Count == 0) atlas.SubmeshList.SpawnNewInstance();
-      var submesh = atlas[0];
+      model.submesh = atlas.SubmeshCount;
+      atlas.AppendSubmesh();
 
       for (int i = 0; i < vertices.Length; i++)
       {
@@ -62,18 +57,18 @@ namespace Bones3.Util
         }
         model.containedSegments |= segment;
 
-        submesh.VertexList.Add(new OccludingVoxelVertex()
+        atlas.AddVertex(new OccludingVoxelVertex()
         {
           position = vertices[i],
           normal = normals[i],
           tangent = tangents[i],
           uv = new float3(uvs[i], textureIndex),
           segement = segment
-        });
+        }, atlas.SubmeshCount - 1);
       }
 
       for (int i = 0; i < indices.Length; i++)
-        submesh.IndexList.Add((ushort)indices[i]);
+        atlas.AddIndex((ushort)indices[i], atlas.SubmeshCount - 1);
 
       return model;
     }
