@@ -1,5 +1,6 @@
 using UnityEngine.Rendering;
 using Unity.Mathematics;
+using Unity.Collections;
 
 namespace Bones3
 {
@@ -15,6 +16,6 @@ namespace Bones3
     /// Gets the vertex data layout within the GPU for this vertex structure.
     /// </summary>
     /// <returns>The vertex layout.</returns>
-    VertexAttributeDescriptor[] GetLayout();
+    NativeArray<VertexAttributeDescriptor> GetLayout();
   }
 }

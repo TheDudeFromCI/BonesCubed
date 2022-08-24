@@ -1,7 +1,9 @@
+using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Unity.Mathematics;
-using Unity.Burst;
 using UnityEngine.Rendering;
+using Unity.Mathematics;
+using Unity.Collections;
 
 namespace Bones3
 {
@@ -42,15 +44,67 @@ namespace Bones3
 
 
     /// <inheritdoc/>
-    public VertexAttributeDescriptor[] GetLayout()
+    public NativeArray<VertexAttributeDescriptor> GetLayout()
     {
-      return new[]
-      {
-        new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
-        new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.Normal, VertexAttributeFormat.Float32, 3),
-        new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.Tangent, VertexAttributeFormat.Float32, 4),
-        new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 3)
-      };
+      var array = new NativeArray<VertexAttributeDescriptor>(4, Allocator.Temp);
+      array[0] = new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.Position, VertexAttributeFormat.Float32, 3);
+      array[1] = new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.Normal, VertexAttributeFormat.Float32, 3);
+      array[2] = new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.Tangent, VertexAttributeFormat.Float32, 4);
+      array[3] = new VertexAttributeDescriptor(UnityEngine.Rendering.VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 3);
+      return array;
+    }
+
+
+    /// <inheritdoc/>
+    public override bool Equals(object obj)
+    {
+      return obj is VoxelVertex vertex && vertex == this;
+    }
+
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+      return HashCode.Combine(this.position, this.normal, this.uv, this.tangent);
+    }
+
+
+    /// <inheritdoc/>
+    public override string ToString()
+    {
+      return $"VoxelVertex (Position: {this.position}, Normal: {this.normal}, UV: {this.uv}, Tangent: {this.tangent})";
+    }
+
+
+    /// <summary>
+    /// Checks whether or not the two given vertices are equal.
+    /// </summary>
+    /// <param name="a">The first vertex.</param>
+    /// <param name="b">The second vertex.</param>
+    /// <returns>True if the vertices are equal, false otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator ==(VoxelVertex a, VoxelVertex b)
+    {
+      return math.distancesq(a.position, b.position) < 0.001
+          && math.distancesq(a.normal, b.normal) < 0.001
+          && math.distancesq(a.uv, b.uv) < 0.001
+          && math.distancesq(a.tangent, b.tangent) < 0.001;
+    }
+
+
+    /// <summary>
+    /// Checks whether or not the two given vertices are inequal.
+    /// </summary>
+    /// <param name="a">The first vertex.</param>
+    /// <param name="b">The second vertex.</param>
+    /// <returns>True if the vertices are not equal, false otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator !=(VoxelVertex a, VoxelVertex b)
+    {
+      return math.distancesq(a.position, b.position) >= 0.001
+          || math.distancesq(a.normal, b.normal) >= 0.001
+          || math.distancesq(a.uv, b.uv) >= 0.001
+          || math.distancesq(a.tangent, b.tangent) >= 0.001;
     }
   }
 }

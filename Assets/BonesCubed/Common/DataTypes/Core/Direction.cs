@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
+using Unity.Mathematics;
 
 namespace Bones3
 {
@@ -59,6 +61,9 @@ namespace Bones3
     public Vector3 AsVector3 => AsBlockPos.AsVector3;
 
 
+    public int3 AsInt3 => new int3(AsBlockPos.x, AsBlockPos.y, AsBlockPos.z);
+
+
     /// <summary>
     /// Gets the opposite of this direction.
     /// </summary>
@@ -89,6 +94,53 @@ namespace Bones3
     {
       Index = index;
       AsBlockPos = asVector;
+    }
+
+
+    /// <inheritdoc/>
+    public override bool Equals(object obj)
+    {
+      return obj is Direction dir && dir.Index == this.Index;
+    }
+
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+      return this.Index;
+    }
+
+
+    /// <inheritdoc/>
+    public override string ToString()
+    {
+      return this.AsBlockPos.ToString();
+    }
+
+
+    /// <summary>
+    /// Checks whether or not the two given directions are equal.
+    /// </summary>
+    /// <param name="a">The first direction.</param>
+    /// <param name="b">The second direction.</param>
+    /// <returns>True if the directions are equal, false otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator ==(Direction a, Direction b)
+    {
+      return a.Index == b.Index;
+    }
+
+
+    /// <summary>
+    /// Checks whether or not the two given directions are inequal.
+    /// </summary>
+    /// <param name="a">The first direction.</param>
+    /// <param name="b">The second direction.</param>
+    /// <returns>True if the directions are not equal, false otherwise.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator !=(Direction a, Direction b)
+    {
+      return a.Index != b.Index;
     }
 
 

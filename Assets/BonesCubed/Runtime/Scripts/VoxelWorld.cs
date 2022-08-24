@@ -1,57 +1,53 @@
+using System.Collections.Generic;
 using UnityEngine;
-using Unity.Jobs;
+using Unity.Mathematics;
 using Unity.Collections;
-using Bones3.Jobs;
 using Bones3.Native;
+using Bones3.Native.Unsafe;
+using Bones3.Util;
 
 namespace Bones3.Runtime
 {
-  public class CustomWorld : World
-  {
-    protected override void CreateFields(Chunk chunk)
-    {
-      chunk.AddField<ushort>("model");
-    }
-  }
-
-
   public class VoxelWorld : MonoBehaviour
   {
-    public BlockModel model;
+    public BlockType blockType;
 
 
     void Start()
     {
-      var assets = new Bones3AssetReference();
-      var grassId = assets.LoadBlockModel(model);
+      IBlockModel[] blockModels = new[] { blockType.BlockModel };
+      Material[] blockMaterials = new[] { blockType.Material };
 
-      var world = new CustomWorld();
-      var pos = new BlockPos(0, 0, 0);
-      var chunk = world.GetChunk(pos, true);
-      var field = chunk.GetField<ushort>("model");
-      field[pos] = grassId;
+      NativeArray<UnsafeBlockModel> models;
+      Mesh.MeshDataArray meshDataArray;
+      MeshUtilities.LoadBlockModels(blockModels, out models, out meshDataArray).Complete();
+      meshDataArray.Dispose();
 
-      var chunkGrid = chunk.GetFieldAndSurrounding<ushort>("model");
-      var meshData = new NativeMesh<VoxelVertex, ushort>(Allocator.TempJob);
-      var remesh = new GenerateChunkMesh()
-      {
-        chunkData = chunkGrid,
-        modelPointers = assets.ModelPointers,
-        blockModelAtlas = assets.ModelAtlas,
-        chunkMesh = meshData
-      }.Schedule();
-      remesh.Complete();
+      var modelIds = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
+      modelIds.SetElement(0, 1);
+
+      var materialIds = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
+
+      var region = new Region(new int3(-5), new int3(11));
+      Mesh.MeshDataArray meshData;
+      NativeList<int> materialIndices;
+      MeshUtilities.RemeshRegion(region, modelIds, materialIds, models, out meshData, out materialIndices).Complete();
 
       var mesh = new Mesh();
-      meshData.ApplyToMesh(mesh);
-      meshData.Dispose();
+      Mesh.ApplyAndDisposeWritableMeshData(meshData, mesh);
+
+      var sharedMaterials = new Material[materialIndices.Length];
+      for (int i = 0; i < sharedMaterials.Length; i++) sharedMaterials[i] = blockMaterials[materialIndices[i]];
+      materialIndices.Dispose();
 
       var go = new GameObject();
       go.AddComponent<MeshFilter>().sharedMesh = mesh;
-      go.AddComponent<MeshRenderer>();
+      go.AddComponent<MeshRenderer>().sharedMaterials = sharedMaterials;
 
-      world.Dispose();
-      assets.Dispose();
+      for (int i = 0; i < models.Length; i++) models[i].Dispose();
+      modelIds.Dispose();
+      materialIds.Dispose();
+      models.Dispose();
     }
   }
 }

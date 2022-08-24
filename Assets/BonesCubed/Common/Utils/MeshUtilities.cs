@@ -1,6 +1,11 @@
-using Unity.Mathematics;
-using Bones3.Native;
+using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
+using Unity.Jobs;
+using Unity.Collections;
+using Bones3.Jobs;
+using Bones3.Native;
+using Bones3.Native.Unsafe;
 
 namespace Bones3.Util
 {
@@ -10,67 +15,64 @@ namespace Bones3.Util
   public static class MeshUtilities
   {
     /// <summary>
-    /// Converts the Unity block mesh into an occluded block model and bakes it
-    /// into the model atlas. Block models may be either segmentable or not.
-    /// Segmentable models are usually simple shapes like a plain cube or stair
-    /// case. Segmentable models will allow faces that touch the edge of the
-    /// block bounds to be occluded by neighboring blocks and removed from the
-    /// generated chunk mesh. More complex models may not handle segmentation as
-    /// well, and should have segmentation disabled.
-    ///
-    /// This function does not handle determining occluding segments, which
-    /// should be assigned manually.
+    /// Loads an array of block models into native block models to be used
+    /// within Bones3 mesh generation tasks. Note that only the first submesh
+    /// of each block model is used.
     /// </summary>
-    /// <param name="blockModel">The Unity block model.</param>
-    /// <param name="atlas">The occluding block model atlas.</param>
-    /// <param name="textureIndex">The texture index to use for this model.</param>
-    /// <param name="allowSegmentation">Whether or not to attempt to segment the model into occludable parts.</param>
-    /// <returns>The model pointer data.</returns>
-    public static OccludingBlockModel BakeBlockModelIntoAtlas(IBlockModel blockModel, NativeMesh<OccludingVoxelVertex, ushort> atlas, int textureIndex, bool allowSegmentation)
+    /// <param name="models">The models to load.</param>
+    /// <param name="generatedModels">The native array of generated models.</param>
+    /// <param name="meshData">The mesh data container being used by this job. Needs to be disposed manually when the job is complete.</param>
+    /// <returns>The job handle responsible for loading all native block models.</returns>
+    public static JobHandle LoadBlockModels(IBlockModel[] models, out NativeArray<UnsafeBlockModel> generatedModels, out Mesh.MeshDataArray meshData)
     {
-      var model = new OccludingBlockModel();
+      meshData = Mesh.AcquireReadOnlyMeshData(models.Select(m => m.Mesh).ToArray());
+      generatedModels = new NativeArray<UnsafeBlockModel>(models.Length, Allocator.Persistent);
+      for (int i = 0; i < models.Length; i++) generatedModels[i] = new UnsafeBlockModel(models[i].OccludingDirections, Allocator.Persistent);
 
-      var mesh = blockModel.StaticMesh;
-      var vertices = mesh.vertices;
-      var normals = mesh.normals;
-      var tangents = mesh.tangents;
-      var uvs = mesh.uv;
-      var indices = mesh.triangles;
-
-      model.containedSegments = OccludingVoxelVertexSegement.None;
-      model.occludingSegments = blockModel.OccludingDirections;
-      model.submesh = atlas.SubmeshCount;
-      atlas.AppendSubmesh();
-
-      for (int i = 0; i < vertices.Length; i++)
+      return new LoadBlockModel()
       {
-        // TODO Validate segmentation
-        var segment = OccludingVoxelVertexSegement.Center;
-        if (allowSegmentation)
-        {
-          if (math.dot(normals[i], new float3(0, 0, 1)) > 0.9999 && Mathf.Abs(vertices[i].z - 1) < 0.0001) segment = OccludingVoxelVertexSegement.North;
-          if (math.dot(normals[i], new float3(1, 0, 0)) > 0.9999 && Mathf.Abs(vertices[i].x - 1) < 0.0001) segment = OccludingVoxelVertexSegement.East;
-          if (math.dot(normals[i], new float3(0, 0, -1)) > 0.9999 && Mathf.Abs(vertices[i].z - 0) < 0.0001) segment = OccludingVoxelVertexSegement.South;
-          if (math.dot(normals[i], new float3(-1, 0, 0)) > 0.9999 && Mathf.Abs(vertices[i].x - 0) < 0.0001) segment = OccludingVoxelVertexSegement.West;
-          if (math.dot(normals[i], new float3(0, 1, 0)) > 0.9999 && Mathf.Abs(vertices[i].y - 1) < 0.0001) segment = OccludingVoxelVertexSegement.Top;
-          if (math.dot(normals[i], new float3(0, -1, 0)) > 0.9999 && Mathf.Abs(vertices[i].y - 0) < 0.0001) segment = OccludingVoxelVertexSegement.Bottom;
-        }
-        model.containedSegments |= segment;
+        models = generatedModels,
+        meshData = meshData
+      }.Schedule(models.Length, 4);
+    }
 
-        atlas.AddVertex(new OccludingVoxelVertex()
-        {
-          position = vertices[i],
-          normal = normals[i],
-          tangent = tangents[i],
-          uv = new float3(uvs[i], textureIndex),
-          segement = segment
-        }, atlas.SubmeshCount - 1);
-      }
 
-      for (int i = 0; i < indices.Length; i++)
-        atlas.AddIndex((ushort)indices[i], atlas.SubmeshCount - 1);
+    /// <summary>
+    /// Generates a new mesh for the given region of an infinite grid of model
+    /// IDs.
+    /// </summary>
+    /// <param name="region">The region to generate a mesh for.</param>
+    /// <param name="modelIds">The infinite grid of model Ids.</param>
+    /// <param name="materialIds">The infinite grid of material Ids.</param>
+    /// <param name="blockModels">The list of block models to read mesh data from.</param>
+    /// <param name="meshData">The generated mesh data. (After job completion.)</param>
+    /// <param name="materialIndices">The list of material indices for each submesh. (After job completion.)</param>
+    /// <returns>The job handle containing this remesh task.</returns>
+    public static JobHandle RemeshRegion(Region region, NativeInfiniteGrid3D<ushort> modelIds, NativeInfiniteGrid3D<ushort> materialIds, NativeArray<UnsafeBlockModel> blockModels, out Mesh.MeshDataArray meshData, out NativeList<int> materialIndices)
+    {
+      var blockVisibility = new NativeGrid3D<IBlockModel.OccludingSegment>(region, Allocator.TempJob);
+      meshData = Mesh.AllocateWritableMeshData(1);
+      materialIndices = new NativeList<int>(4, Allocator.TempJob);
 
-      return model;
+      var jobHandle = new CalculateBlockOcclusion()
+      {
+        models = blockModels,
+        modelIds = modelIds,
+        blockVisiblity = blockVisibility,
+      }.Schedule(blockVisibility.Length, 16);
+
+      jobHandle = new GenerateRegionMesh()
+      {
+        models = blockModels,
+        modelIds = modelIds,
+        materialIds = materialIds,
+        blockVisibility = blockVisibility,
+        generatedMesh = meshData[0],
+        materialIndices = materialIndices,
+      }.Schedule(jobHandle);
+
+      jobHandle = blockVisibility.Dispose(jobHandle);
+      return jobHandle;
     }
   }
 }

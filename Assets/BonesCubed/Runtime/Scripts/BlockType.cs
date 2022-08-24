@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.ObjectModel;
 
 namespace Bones3.Runtime
 {
@@ -10,13 +9,6 @@ namespace Bones3.Runtime
   [CreateAssetMenu(fileName = "New Block Type", menuName = "Bones3/Block Type")]
   public class BlockType : ScriptableObject, IBlockType
   {
-    private ReadOnlyDictionary<string, string> propertiesReadOnly;
-
-
-    [BeginGroup("Metadata")]
-    [BeginIndent]
-
-
     [SerializeField]
     [Tooltip("The name of this block type.")]
     [RegexValue(@".+", "Name cannot be empty!")]
@@ -24,37 +16,24 @@ namespace Bones3.Runtime
 
 
     [SerializeField]
-    [Tooltip("Gets whether or not this block type has a renderable, static mesh.")]
-    private bool hasStaticMesh = true;
-
-
-    [EndIndent]
-    [EndGroup]
-    [SpaceArea(10)]
+    [Tooltip("The block model to use for this block type.")]
+    private BlockModel blockModel;
 
 
     [SerializeField]
-    [Header("Properties")]
-    [Tooltip("A list of available properties for this block type and their default values.")]
-    private SerializedDictionary<string, string> properties = new SerializedDictionary<string, string>();
+    [Tooltip("The material to use for this block type.")]
+    private Material material;
 
 
     /// <inheritdoc/>
-    public string Name { get => this.name; }
+    public string Name => this.name;
 
 
     /// <inheritdoc/>
-    public bool HasStaticMesh { get => this.hasStaticMesh; }
+    public Material Material => this.material;
 
 
     /// <inheritdoc/>
-    public ReadOnlyDictionary<string, string> DefaultProperties
-    {
-      get
-      {
-        if (this.propertiesReadOnly == null) this.propertiesReadOnly = new ReadOnlyDictionary<string, string>(this.properties);
-        return this.propertiesReadOnly;
-      }
-    }
+    public IBlockModel BlockModel => this.blockModel;
   }
 }

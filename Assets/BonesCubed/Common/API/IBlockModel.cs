@@ -1,5 +1,5 @@
+using System;
 using UnityEngine;
-using System.Collections.Generic;
 
 namespace Bones3
 {
@@ -10,15 +10,34 @@ namespace Bones3
   public interface IBlockModel
   {
     /// <summary>
+    /// An enum to indicate which segement of an occluding block model a vertex
+    /// belongs to.
+    /// </summary>
+    [Flags]
+    public enum OccludingSegment
+    {
+      None = 0,
+      North = 1,
+      East = 2,
+      South = 4,
+      West = 8,
+      Top = 16,
+      Bottom = 32,
+      Center = 64,
+      Everything = 127,
+    }
+
+
+    /// <summary>
     /// Gets the mesh object for this model that should be baked into the chunk
     /// mesh.
     /// </summary>
-    Mesh StaticMesh { get; }
+    Mesh Mesh { get; }
 
 
     /// <summary>
     /// Gets the directions of this block model that block neighboring blocks.
     /// </summary>
-    OccludingVoxelVertexSegement OccludingDirections { get; }
+    OccludingSegment OccludingDirections { get; }
   }
 }
