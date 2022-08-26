@@ -25,6 +25,7 @@ namespace Bones3.Runtime
 
       var modelIds = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
       modelIds.SetElement(0, 1);
+      modelIds.SetElement(new int3(0, 0, 1), 1);
 
       var materialIds = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
 

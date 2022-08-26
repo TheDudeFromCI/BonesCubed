@@ -54,12 +54,12 @@ namespace Bones3.Jobs
       var segment = IBlockModel.OccludingSegment.None;
       if (ModelIndexAt(pos) < 0) return segment;
 
-      segment |= IsFaceHidden(pos, Direction.North) ? 0 : OccludingSegmentFromDirection(Direction.North);
-      segment |= IsFaceHidden(pos, Direction.East) ? 0 : OccludingSegmentFromDirection(Direction.East);
-      segment |= IsFaceHidden(pos, Direction.South) ? 0 : OccludingSegmentFromDirection(Direction.South);
-      segment |= IsFaceHidden(pos, Direction.West) ? 0 : OccludingSegmentFromDirection(Direction.West);
-      segment |= IsFaceHidden(pos, Direction.Up) ? 0 : OccludingSegmentFromDirection(Direction.Up);
-      segment |= IsFaceHidden(pos, Direction.Down) ? 0 : OccludingSegmentFromDirection(Direction.Down);
+      segment |= IsFaceHidden(pos, Direction.North) ? 0 : OccludingSegmentFromDirection(Direction.North.Opposite);
+      segment |= IsFaceHidden(pos, Direction.East) ? 0 : OccludingSegmentFromDirection(Direction.East.Opposite);
+      segment |= IsFaceHidden(pos, Direction.South) ? 0 : OccludingSegmentFromDirection(Direction.South.Opposite);
+      segment |= IsFaceHidden(pos, Direction.West) ? 0 : OccludingSegmentFromDirection(Direction.West.Opposite);
+      segment |= IsFaceHidden(pos, Direction.Up) ? 0 : OccludingSegmentFromDirection(Direction.Up.Opposite);
+      segment |= IsFaceHidden(pos, Direction.Down) ? 0 : OccludingSegmentFromDirection(Direction.Down.Opposite);
 
       if (segment > 0) segment |= IBlockModel.OccludingSegment.Center;
       return segment;

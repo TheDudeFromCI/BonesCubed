@@ -84,6 +84,7 @@ namespace Bones3.Jobs
         for (int j = 1; j < (int)IBlockModel.OccludingSegment.Everything; j <<= 1)
         {
           var segment = (IBlockModel.OccludingSegment)j;
+          if ((segment & visibleSegments) == 0) continue;
           model.GetSegment(ref tempVerts, ref tempIndis, segment);
 
           int vertexOffset = meshVertices.Length;
