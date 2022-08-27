@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using UnityEngine;
 using Unity.Mathematics;
 
 namespace Bones3
@@ -10,58 +9,49 @@ namespace Bones3
     /// <summary>
     /// The north-facing directional enum value.
     /// </summary>
-    public static readonly Direction North = new Direction(0, new BlockPos(0, 0, -1));
+    public static readonly Direction North = new Direction(0, new int3(0, 0, -1));
 
 
     /// <summary>
     /// The east-facing directional enum value.
     /// </summary>
-    public static readonly Direction East = new Direction(1, new BlockPos(1, 0, 0));
+    public static readonly Direction East = new Direction(1, new int3(1, 0, 0));
 
 
     /// <summary>
     /// The south-facing directional enum value.
     /// </summary>
-    public static readonly Direction South = new Direction(2, new BlockPos(0, 0, 1));
+    public static readonly Direction South = new Direction(2, new int3(0, 0, 1));
 
 
     /// <summary>
     /// The west-facing directional enum value.
     /// </summary>
-    public static readonly Direction West = new Direction(3, new BlockPos(-1, 0, 0));
+    public static readonly Direction West = new Direction(3, new int3(-1, 0, 0));
 
 
     /// <summary>
     /// The up-facing directional enum value.
     /// </summary>
-    public static readonly Direction Up = new Direction(4, new BlockPos(0, 1, 0));
+    public static readonly Direction Up = new Direction(4, new int3(0, 1, 0));
 
 
     /// <summary>
     /// The down-facing directional enum value.
     /// </summary>
-    public static readonly Direction Down = new Direction(5, new BlockPos(0, -1, 0));
+    public static readonly Direction Down = new Direction(5, new int3(0, -1, 0));
 
 
     /// <summary>
     /// The index value of this direction.
     /// </summary>
-    public int Index { get; private set; }
+    public int Index { get; }
 
 
     /// <summary>
-    /// Gets the block-position vector version of this direction.
+    /// Gets this direction as an int3 vector.
     /// </summary>
-    public BlockPos AsBlockPos { get; private set; }
-
-
-    /// <summary>
-    /// Converts this direction into a Unity Vector3.
-    /// </summary>
-    public Vector3 AsVector3 => AsBlockPos.AsVector3;
-
-
-    public int3 AsInt3 => new int3(AsBlockPos.x, AsBlockPos.y, AsBlockPos.z);
+    public int3 AsInt3 { get; }
 
 
     /// <summary>
@@ -90,10 +80,10 @@ namespace Bones3
     /// </summary>
     /// <param name="index">The index value of this direction.</param>
     /// <param name="asVector">The directional unit vector.</param>
-    private Direction(int index, BlockPos asVector)
+    private Direction(int index, int3 asVector)
     {
       Index = index;
-      AsBlockPos = asVector;
+      AsInt3 = asVector;
     }
 
 
@@ -114,7 +104,7 @@ namespace Bones3
     /// <inheritdoc/>
     public override string ToString()
     {
-      return this.AsBlockPos.ToString();
+      return this.AsInt3.ToString();
     }
 
 
