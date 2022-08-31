@@ -10,45 +10,78 @@ namespace Bones3.Runtime
 {
   public class VoxelWorld : MonoBehaviour
   {
-    public BlockType blockType;
+    [SerializeField]
+    [Tooltip("The block list to use for this world.")]
+    private BlockList blockList;
+
+
+    private NativeInfiniteGrid3D<ushort> modelIDGrid;
+    private NativeInfiniteGrid3D<ushort> materialIDGrid;
+
+    private NativeArray<UnsafeBlockModel> models;
+    private NativeArray<BlockMeta> metas;
+    private Material[] materials;
+
+
+    void Awake()
+    {
+      Mesh.MeshDataArray meshDataArray;
+      blockList.LoadBlockModels(out this.models, out meshDataArray).Complete();
+      meshDataArray.Dispose();
+
+      this.materials = blockList.LoadBlockMaterials();
+      this.metas = blockList.LoadBlockMetas();
+
+      this.modelIDGrid = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
+      this.materialIDGrid = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
+    }
 
 
     void Start()
     {
-      IBlockModel[] blockModels = new[] { blockType.BlockModel };
-      Material[] blockMaterials = new[] { blockType.Material };
+      SetBlock(new int3(0, 0, 0), "Grass");
+      SetBlock(new int3(0, 0, 1), "Grass");
+      GenerateMesh(new Region(new int3(-5, -5, -5), new int3(11, 11, 11)));
+    }
 
-      NativeArray<UnsafeBlockModel> models;
-      Mesh.MeshDataArray meshDataArray;
-      MeshUtilities.LoadBlockModels(blockModels, out models, out meshDataArray).Complete();
-      meshDataArray.Dispose();
 
-      var modelIds = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
-      modelIds.SetElement(0, 1);
-      modelIds.SetElement(new int3(0, 0, 1), 1);
+    void OnDestroy()
+    {
+      this.modelIDGrid.Dispose();
+      this.materialIDGrid.Dispose();
 
-      var materialIds = new NativeInfiniteGrid3D<ushort>(Allocator.Persistent);
+      for (int i = 0; i < models.Length; i++) models[i].Dispose();
+      this.models.Dispose();
+      this.metas.Dispose();
+    }
 
-      var region = new Region(new int3(-5), new int3(11));
+
+    public void SetBlock(int3 pos, string name)
+    {
+      var blockId = this.blockList.GetBlockID(name);
+      if (blockId < 0) throw new System.ArgumentException("Block not found!", nameof(name));
+
+      this.modelIDGrid.SetElement(pos, this.metas[blockId].modelId);
+      this.materialIDGrid.SetElement(pos, this.metas[blockId].materialId);
+    }
+
+
+    public void GenerateMesh(Region region)
+    {
       Mesh.MeshDataArray meshData;
       NativeList<int> materialIndices;
-      MeshUtilities.RemeshRegion(region, modelIds, materialIds, models, out meshData, out materialIndices).Complete();
+      MeshUtilities.RemeshRegion(region, this.modelIDGrid, this.materialIDGrid, this.models, out meshData, out materialIndices).Complete();
 
       var mesh = new Mesh();
       Mesh.ApplyAndDisposeWritableMeshData(meshData, mesh);
 
       var sharedMaterials = new Material[materialIndices.Length];
-      for (int i = 0; i < sharedMaterials.Length; i++) sharedMaterials[i] = blockMaterials[materialIndices[i]];
+      for (int i = 0; i < sharedMaterials.Length; i++) sharedMaterials[i] = this.materials[materialIndices[i]];
       materialIndices.Dispose();
 
       var go = new GameObject();
       go.AddComponent<MeshFilter>().sharedMesh = mesh;
       go.AddComponent<MeshRenderer>().sharedMaterials = sharedMaterials;
-
-      for (int i = 0; i < models.Length; i++) models[i].Dispose();
-      modelIds.Dispose();
-      materialIds.Dispose();
-      models.Dispose();
     }
   }
 }

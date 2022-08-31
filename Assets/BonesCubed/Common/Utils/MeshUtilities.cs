@@ -23,17 +23,17 @@ namespace Bones3.Util
     /// <param name="generatedModels">The native array of generated models.</param>
     /// <param name="meshData">The mesh data container being used by this job. Needs to be disposed manually when the job is complete.</param>
     /// <returns>The job handle responsible for loading all native block models.</returns>
-    public static JobHandle LoadBlockModels(IBlockModel[] models, out NativeArray<UnsafeBlockModel> generatedModels, out Mesh.MeshDataArray meshData)
+    public static JobHandle LoadBlockModels(List<IBlockModel> models, out NativeArray<UnsafeBlockModel> generatedModels, out Mesh.MeshDataArray meshData)
     {
       meshData = Mesh.AcquireReadOnlyMeshData(models.Select(m => m.Mesh).ToArray());
-      generatedModels = new NativeArray<UnsafeBlockModel>(models.Length, Allocator.Persistent);
-      for (int i = 0; i < models.Length; i++) generatedModels[i] = new UnsafeBlockModel(models[i].OccludingDirections, Allocator.Persistent);
+      generatedModels = new NativeArray<UnsafeBlockModel>(models.Count, Allocator.Persistent);
+      for (int i = 0; i < models.Count; i++) generatedModels[i] = new UnsafeBlockModel(models[i].OccludingDirections, Allocator.Persistent);
 
       return new LoadBlockModel()
       {
         models = generatedModels,
         meshData = meshData
-      }.Schedule(models.Length, 4);
+      }.Schedule(models.Count, 4);
     }
 
 
